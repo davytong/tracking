@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Salary Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      @font-face {
+        font-family: "KhmerOS";
+        src: local("Khmer OS Siemreap");
+      }
+      body {
+        font-family: "Poppins", "KhmerOS", sans-serif;
+        background: #f4f7fb;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #0d6efd;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+      .card {
+        border-radius: 16px;
+        transition: 0.3s;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      }
+      .fixed {
+        background: #eef2ff;
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+      .expense {
+        display: flex;
+        justify-content: space-between;
+        background: #f8f9fa;
+        padding: 6px 10px;
+        border-radius: 8px;
+        margin-bottom: 4px;
+        align-items: center;
+        font-size: 14px;
+      }
+      .over-card {
+        border: 2px solid #dc3545;
+        background: #ffe6e6;
+      }
+      .over {
+        color: #dc3545;
+        font-weight: 600;
+      }
+      .progress {
+        height: 14px;
+        border-radius: 20px;
+        margin-top: 5px;
+      }
+      .lang-btn {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
+      }
+      .btn-small {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="btn btn-outline-primary lang-btn" id="langBtn">ខ្មែរ</button>
+    <h1 id="title"></h1>
+
+    <div class="container">
+      <div class="d-flex justify-content-between mb-3 flex-wrap">
+        <select id="monthSelect" class="form-select w-50 mb-2"></select>
+        <button class="btn btn-danger ms-2 mb-2" id="resetMonth">
+          Reset Month
+        </button>
+      </div>
+
+      <div class="row" id="tracker"></div>
+
+      <div class="card mt-4 shadow-sm">
+        <div class="card-body text-center fw-bold">
+          <span id="spentLabel"></span>: $<span id="grandSpent">0</span> |
+          <span id="remainLabel"></span>: $<span id="grandRemain">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal fade" id="expModal">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 id="modalTitle"></h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input
+              id="expName"
+              class="form-control mb-2"
+              placeholder="Item name"
+            />
+            <input
+              id="expCost"
+              type="number"
+              class="form-control"
+              placeholder="Cost"
+            />
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-danger" id="deleteBtn">🗑️</button>
+            <button class="btn btn-primary" id="saveBtn">➜]</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+      const SALARY = 320;
+
+      // Language
+      const i18n = {
+        en: {
+          title: "Salary Tracker",
+          first: "First Half (1–15)",
+          second: "Second Half (16–End)",
+          spent: "Spent",
+          remain: "Remaining",
+          over: "OVER",
+          add: "Add",
+          edit: "Edit Expense",
+          delete: "Delete",
+          items: {
+            Food: "Food",
+            Gas: "Gas",
+            House: "House",
+            Saving: "Saving",
+            Parking: "Parking",
+            Oil: "Oil",
+            Other: "Other",
+          },
+          modalName: "Item name",
+          modalCost: "Cost",
+          resetMonth: "Reset ⭮",
+        },
+        km: {
+          title: "តារាងគ្រប់គ្រងប្រាក់ខែ",
+          first: "ពាក់កណ្តាលខែទី១ (១–១៥)",
+          second: "ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)",
+          spent: "ចំណាយ",
+          remain: "នៅសល់",
+          over: "លើស",
+          add: "បន្ថែម",
+          edit: "កែចំណាយ",
+          delete: "លុប",
+          items: {
+            Food: "អាហារ",
+            Gas: "សាំង",
+            House: "ផ្ទះ",
+            Saving: "សន្សំ",
+            Parking: "ចំណតម៉ូតូ",
+            Oil: "ប្រេងម៉ូតូ",
+            Other: "ផ្សេងៗ",
+            Other2: "ផ្សេងៗ",
+          },
+          modalName: "ឈ្មោះទំនិញ",
+          modalCost: "ចំណាយ",
+          resetMonth: "សំអាត ⭮",
+        },
+      };
+
+      let lang = localStorage.getItem("lang") || "en";
+
+      // Halves configuration
+      const halves = [
+        { key: "first", fixed: ["Saving"], vars: ["Food", "Gas", "Other"] },
+        {
+          key: "second",
+          fixed: ["House"],
+          vars: ["Food", "Oil", "Other"],
+        },
+      ];
+
+      // Budgets
+      const budgets = {
+        Food: 60,
+        Gas: 15,
+        House: 70,
+        Saving: 60,
+        Oil: 15,
+        Other: 25,
+        Other2: 15,
+      };
+
+      // Month select
+      const monthSelect = document.getElementById("monthSelect");
+      const y = new Date().getFullYear();
+      for (let m = 1; m <= 12; m++)
+        monthSelect.innerHTML += `<option>${y}-${m}</option>`;
+      monthSelect.value = `${y}-${new Date().getMonth() + 1}`;
+
+      // Storage helpers
+      const key = (h, c) => `${monthSelect.value}-${h}-${c}`;
+      const load = (k) => JSON.parse(localStorage.getItem(k) || "[]");
+      const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+      // Modal context
+      let ctx = null;
+
+      // Render function
+      function render() {
+        const t = i18n[lang];
+        title.textContent = t.title;
+        spentLabel.textContent = t.spent;
+        remainLabel.textContent = t.remain;
+        langBtn.textContent = lang === "en" ? "🌐-KH" : "🌐-EN";
+        resetMonth.textContent = t.resetMonth;
+        expName.placeholder = t.modalName;
+        expCost.placeholder = t.modalCost;
+
+        tracker.innerHTML = "";
+        let total = 0;
+
+        halves.forEach((h) => {
+          let html = `<div class="col-md-6 mb-3">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">${t[h.key]}</div>
+      <div class="card-body">`;
+
+          // Fixed items
+          h.fixed.forEach((f) => {
+            const paid = load(key(h.key, f)).length > 0;
+            if (paid) total += budgets[f];
+            html += `<div class="fixed">${t.items[f]} $${budgets[f]}
+      <input type="checkbox" class="float-end" ${
+        paid ? "checked" : ""
+      } onchange="toggleFixed('${h.key}','${f}',this.checked)">
+    </div>`;
+          });
+
+          // Variable items
+          h.vars.forEach((v) => {
+            let varBudget = budgets[v];
+
+            // Reduce $10 for "Other" in the second half
+            if (v === "Other" && h.key === "second") varBudget -= 10;
+
+            const list = load(key(h.key, v));
+            let spent = list.reduce((a, b) => a + b.cost, 0);
+            const remain = varBudget - spent;
+            const over = remain < 0;
+            total += spent;
+
+            html += `<div class="card p-2 mb-2 ${over ? "over-card" : ""}">
+      <b>${t.items[v]} ($${varBudget})</b>
+      <button class="btn btn-sm btn-primary float-end btn-small" onclick="add('${
+        h.key
+      }','${v}')">${t.add} ✙</button>
+      ${list
+        .map(
+          (e, i) =>
+            `<div class="expense">${e.name} $${e.cost} 
+         <button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${i})">✏️</button>
+        </div>`
+        )
+        .join("")}
+      <div class="${over ? "over" : ""}">${t.spent}: $${spent} | ${
+              over
+                ? `${t.over} $${Math.abs(remain)}`
+                : `${t.remain}: $${remain}`
+            }</div>
+      <div class="progress">
+        <div class="progress-bar ${
+          over
+            ? "bg-danger"
+            : spent / varBudget > 0.7
+            ? "bg-warning"
+            : "bg-success"
+        }" style="width:${Math.min((spent / varBudget) * 100, 100)}%"></div>
+      </div>
+    </div>`;
+          });
+
+          html += `</div></div></div>`;
+          tracker.innerHTML += html;
+        });
+
+        grandSpent.textContent = total;
+        grandRemain.textContent = SALARY - total;
+      }
+
+      // Actions
+      function toggleFixed(h, c, v) {
+        save(key(h, c), v ? [{ paid: true }] : []);
+        render();
+      }
+      function add(h, c) {
+        ctx = { h, c, i: null };
+        expName.value = "";
+        expCost.value = "";
+        modalTitle.textContent = i18n[lang].edit;
+        new bootstrap.Modal(expModal).show();
+      }
+      function edit(h, c, i) {
+        const l = load(key(h, c));
+        ctx = { h, c, i };
+        expName.value = l[i].name;
+        expCost.value = l[i].cost;
+        modalTitle.textContent = i18n[lang].edit;
+        new bootstrap.Modal(expModal).show();
+      }
+
+      saveBtn.onclick = () => {
+        const l = load(key(ctx.h, ctx.c));
+        const e = { name: expName.value, cost: +expCost.value };
+        ctx.i === null ? l.push(e) : (l[ctx.i] = e);
+        save(key(ctx.h, ctx.c), l);
+        bootstrap.Modal.getInstance(expModal).hide();
+        render();
+      };
+      deleteBtn.onclick = () => {
+        const l = load(key(ctx.h, ctx.c));
+        l.splice(ctx.i, 1);
+        save(key(ctx.h, ctx.c), l);
+        bootstrap.Modal.getInstance(expModal).hide();
+        render();
+      };
+
+      langBtn.onclick = () => {
+        lang = lang === "en" ? "km" : "en";
+        localStorage.setItem("lang", lang);
+        render();
+      };
+
+      monthSelect.onchange = render;
+      resetMonth.onclick = () => {
+        halves.forEach((h) =>
+          [...h.fixed, ...h.vars].forEach((c) =>
+            localStorage.removeItem(key(h.key, c))
+          )
+        );
+        render();
+      };
+
+      render();
+    </script>
+  </body>
+</html>
