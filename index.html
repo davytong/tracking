@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>💸Salary Tracker</title>
+<title>💸 Salary Tracker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -10,12 +10,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 
 <style>
-body { font-family:"Poppins",sans-serif; background:#f4f7fb; padding:20px; }
+@font-face { font-family:"KhmerOS"; src:local("Khmer OS Siemreap"); }
+body { font-family:"Poppins","KhmerOS",sans-serif; background:#f4f7fb; padding:20px; }
 h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 .card { border-radius:16px; transition:0.3s; }
 .card:hover { transform:translateY(-3px); box-shadow:0 8px 16px rgba(0,0,0,0.15); }
 .fixed { background:#eef2ff; padding:8px; border-radius:8px; margin-bottom:5px; font-weight:500; }
-.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; align-items:center; flex-wrap:wrap; font-size:14px; }
+.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; align-items:center; font-size:14px; }
 .over-card { border:2px solid #dc3545; background:#ffe6e6; }
 .over { color:#dc3545; font-weight:600; }
 .progress { height:14px; border-radius:20px; margin-top:5px; }
@@ -23,9 +24,9 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 .btn-small { padding:0.2rem 0.5rem; font-size:0.8rem; }
 
 /* Modal buttons */
-#saveBtn { background-color:#28a745; color:white; transition:0.3s; width:100%; margin-bottom:5px; }
+#saveBtn { background-color:#28a745; color:white; transition:0.3s; width:100%; }
 #saveBtn:hover { background-color:#218838; }
-#deleteBtn { background-color:#dc3545; color:white; transition:0.3s; width:100%; margin-bottom:5px; }
+#deleteBtn { background-color:#dc3545; color:white; transition:0.3s; width:100%; }
 #deleteBtn:hover { background-color:#c82333; }
 
 /* Modal input focus highlight */
@@ -33,6 +34,7 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 </style>
 </head>
 <body>
+
 <button class="btn btn-outline-primary lang-btn" id="langBtn">ខ្មែរ</button>
 <h1 id="title"></h1>
 
@@ -65,7 +67,7 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
         <input id="expCost" type="number" class="form-control mb-2" placeholder="Cost" />
         <input id="expDate" type="date" class="form-control mb-2" />
       </div>
-      <div class="modal-footer d-flex flex-column">
+      <div class="modal-footer d-flex flex-column flex-sm-row justify-content-between">
         <button class="btn" id="deleteBtn"></button>
         <button class="btn" id="saveBtn"></button>
       </div>
@@ -74,13 +76,15 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-// ====== CONFIG ======
 const SALARY = 320;
-const MAX_FOOD_PER_DAY = 4; // daily max spend for food
+const MAX_DAILY_FOOD = 4; // max daily food spend
+const HALF_DAYS = 15;
+
 const i18n = {
-en:{ title:"Salary Tracker", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", saveBtn:"Save", deleteBtn:"Delete", modalName:"Item name", modalCost:"Cost", resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"} },
-km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", saveBtn:"រក្សាទុក", deleteBtn:"លុប", modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"} }
+en:{ title:"Salary Tracker", first:"First Half (1–15)", second:"Second Half (16–End)", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", delete:"Delete", saveBtn:"Save", deleteBtn:"Delete", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"}, modalName:"Item name", modalCost:"Cost", modalDate:"Date", resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend", day:"days"},
+km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", first:"ពាក់កណ្តាលខែទី១ (១–១៥)", second:"ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", delete:"លុប", saveBtn:"រក្សាទុក", deleteBtn:"លុប", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"}, modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", modalDate:"កាលបរិច្ឆេទ", resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ", day:"ថ្ងៃ"}
 };
 
 let lang = localStorage.getItem("lang") || "en";
@@ -100,40 +104,25 @@ monthSelect.value=`${y}-${new Date().getMonth()+1}`;
 const key = (h,c)=>`${monthSelect.value}-${h}-${c}`;
 const load = k=>JSON.parse(localStorage.getItem(k)||"[]");
 const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
 let ctx = null;
 
-// ====== HELPERS ======
-function getCurrentHalf(){
-  const today = new Date();
-  return today.getDate() <=15 ? "first" : "second";
-}
-function getDaysLeftInHalf(){
-  const today = new Date();
-  const half = getCurrentHalf();
-  const month = today.getMonth();
-  const year = today.getFullYear();
-  const todayDate = today.getDate();
-  const end = half==="first"?15:new Date(year, month+1,0).getDate();
-  return Math.max(end - todayDate +1,1);
-}
-
-// ====== RENDER ======
 function render(){
-  const t = i18n[lang];
-  title.textContent = t.title;
-  spentLabel.textContent = t.spent;
-  remainLabel.textContent = t.remain;
+  const t=i18n[lang];
+  title.textContent=t.title;
+  spentLabel.textContent=t.spent;
+  remainLabel.textContent=t.remain;
   langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
   resetMonth.textContent=t.resetMonth;
   expName.placeholder=t.modalName;
   expCost.placeholder=t.modalCost;
+  expDate.placeholder=t.modalDate;
   saveBtn.textContent=t.saveBtn+" 💲";
   deleteBtn.textContent=t.deleteBtn+" 🧹";
   deleteBtn.style.display=ctx && ctx.i!==null?"inline-block":"none";
 
   tracker.innerHTML="";
   let grandTotal=0;
-  const daysLeft = getDaysLeftInHalf();
 
   halves.forEach(h=>{
     let halfTotal=0;
@@ -148,69 +137,57 @@ function render(){
 
     // Variable
     h.vars.forEach(v=>{
-      let varBudget = budgets[v];
+      let varBudget=budgets[v];
       if(v==="Other" && h.key==="second") varBudget-=10;
-      const list = load(key(h.key,v));
-      const spent = list.reduce((a,b)=>a+b.cost,0);
-      const remain = varBudget - spent;
+
+      const list=load(key(h.key,v));
+      let spent=list.reduce((a,b)=>a+b.cost,0);
+      spent = parseFloat(spent.toFixed(2));
+      let remain = parseFloat((varBudget - spent).toFixed(2));
       const over = remain<0;
       halfTotal += spent;
 
-      html+=`<div class="card p-2 mb-2 ${over?"over-card":""}">
-        <b>${t.items[v]} ($${varBudget})</b>
-        <button class="btn btn-sm btn-primary float-end btn-small" onclick="add('${h.key}','${v}')">${t.add} ➕</button>
-        ${list.map((e,i)=>`<div class="expense">${e.date||''} | ${e.name} $${e.cost}<button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${i})">✏️</button></div>`).join('')}
-        <div class="${over?"over":""}">${t.spent}: $${spent} | ${over?`${t.over} $${Math.abs(remain)}`:`${t.remain}: $${remain}`}</div>
-        <div class="progress"><div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}" style="width:${Math.min((spent/varBudget)*100,100)}%"></div></div>
-      </div>`;
+      html+=`<div class="card p-2 mb-2 ${over?"over-card":""}"><b>${t.items[v]} ($${varBudget})</b>
+      <button class="btn btn-sm btn-primary float-end btn-small" onclick="add('${h.key}','${v}')">${t.add} ➕</button>
+      ${list.map((e,i)=>`<div class="expense">${e.date} | ${e.name} $${e.cost.toFixed(2)}<button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${i})">✏️</button></div>`).join('')}
+      <div class="${over?"over":""}">${t.spent}: $${spent} | ${over?`${t.over} $${Math.abs(remain).toFixed(2)}`:`${t.remain}: $${remain}`}</div>`;
 
-      // Food per-day using max daily spend
-      if(v==="Food" && h.key===getCurrentHalf()){
-        const needRemain = daysLeft * MAX_FOOD_PER_DAY;
-        const perDay = (needRemain/daysLeft).toFixed(2);
+      // Food plan with per-day calculation
+      if(v==="Food"){
+        const today = new Date();
+        const halfStart = h.key==="first"?1:16;
+        const halfEnd = h.key==="first"?15:new Date(today.getFullYear(), today.getMonth()+1,0).getDate();
+        const dayLeft = Math.max(halfEnd - today.getDate() + 1,1);
+        const needRemain = (dayLeft * MAX_DAILY_FOOD).toFixed(2);
+
         html+=`<div class="mt-2 p-2 rounded" style="background:#eef6ff;font-size:14px">
-          ${t.items[v]} ($${varBudget})<br>
-          ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${needRemain}<br>
-          📅 ${t.needSpend} ~$${perDay}/ថ្ងៃ សម្រាប់ ${daysLeft} ថ្ងៃ
+        ${t.items[v]} ($${budgets[v]})<br>
+        ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${needRemain}<br>
+        📅 ${t.needSpend} ~$${(needRemain/dayLeft).toFixed(2)}/ថ្ងៃ សម្រាប់ ${dayLeft} ${t.day}
         </div>`;
       }
+
+      html+=`<div class="progress"><div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}" style="width:${Math.min((spent/varBudget)*100,100)}%"></div></div></div>`;
     });
 
-    html+=`<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">Subtotal: $${halfTotal} | Remaining: $${SALARY/2 - halfTotal}</div>`;
+    html+=`<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">Subtotal: $${halfTotal.toFixed(2)} | Remaining: $${(SALARY/2 - halfTotal).toFixed(2)}</div>`;
     html+=`</div></div></div>`;
     tracker.innerHTML+=html;
-    grandTotal += halfTotal;
+    grandTotal+=halfTotal;
   });
 
-  grandSpent.textContent = grandTotal;
-  grandRemain.textContent = SALARY - grandTotal;
+  grandSpent.textContent = grandTotal.toFixed(2);
+  grandRemain.textContent = (SALARY - grandTotal).toFixed(2);
 }
 
-// ====== FUNCTIONS ======
-function toggleFixed(h,c,v){ save(key(h,c),v?[{paid:true}]:[]); render();}
-function add(h,c){ 
-  ctx={h,c,i:null}; 
-  expName.value=""; expCost.value=""; 
-  expDate.value = new Date().toISOString().split("T")[0]; 
-  modalTitle.textContent=i18n[lang].edit; 
-  render(); 
-  new bootstrap.Modal(expModal).show();
-}
-function edit(h,c,i){ 
-  const l=load(key(h,c)); 
-  ctx={h,c,i}; 
-  expName.value=l[i].name; 
-  expCost.value=l[i].cost; 
-  expDate.value=l[i].date||new Date().toISOString().split("T")[0]; 
-  modalTitle.textContent=i18n[lang].edit; 
-  render(); 
-  new bootstrap.Modal(expModal).show();
-}
+function toggleFixed(h,c,v){save(key(h,c),v?[{paid:true}]:[]); render();}
+function add(h,c){ctx={h,c,i:null}; expName.value=""; expCost.value=""; expDate.valueAsDate=new Date(); modalTitle.textContent=i18n[lang].edit; render(); new bootstrap.Modal(expModal).show();}
+function edit(h,c,i){const l=load(key(h,c)); ctx={h,c,i}; expName.value=l[i].name; expCost.value=l[i].cost; expDate.value=l[i].date; modalTitle.textContent=i18n[lang].edit; render(); new bootstrap.Modal(expModal).show();}
 
 saveBtn.onclick=()=>{
   if(!ctx) return;
   const l=load(key(ctx.h,ctx.c));
-  const e={name:expName.value,cost:+expCost.value,date:expDate.value};
+  const e={name:expName.value, cost:+expCost.value, date:expDate.value || new Date().toISOString().split('T')[0]};
   ctx.i===null?l.push(e):(l[ctx.i]=e);
   save(key(ctx.h,ctx.c),l);
   bootstrap.Modal.getInstance(expModal).hide();
@@ -219,7 +196,7 @@ saveBtn.onclick=()=>{
 };
 
 deleteBtn.onclick=()=>{
-  if(!ctx || ctx.i===null) return;
+  if(!ctx||ctx.i===null) return;
   const l=load(key(ctx.h,ctx.c));
   l.splice(ctx.i,1);
   save(key(ctx.h,ctx.c),l);
