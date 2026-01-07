@@ -52,9 +52,9 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 
 /* Modal input focus highlight */
 #expName:focus, #expCost:focus { outline:none; border:2px solid #0d6efd; box-shadow:0 0 5px rgba(13,110,253,0.5); }
-
 </style>
 </head>
+
 <body>
 <button class="btn btn-outline-primary lang-btn" id="langBtn">ខ្មែរ</button>
 <h1 id="title"></h1>
@@ -86,7 +86,6 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 <div class="modal-body">
 <input id="expName" class="form-control mb-2" placeholder="Item name" />
 <input id="expCost" type="number" class="form-control" placeholder="Cost" />
-<input id="expDate" type="date" class="form-control" placeholder="Date" />
 </div>
 <div class="modal-footer d-flex flex-column flex-sm-row justify-content-between">
 <button class="btn" id="deleteBtn"></button>
@@ -100,11 +99,10 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 
 <script>
 const SALARY = 320;
-const HALF_DAYS = 15;
-
+const HALF_DAYS = 15; // days 1-15
 const i18n = {
-en:{ title:"Salary Tracker", first:"First Half (1–15)", second:"Second Half (16–End)", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", delete:"Delete", saveBtn:"Save", deleteBtn:"Delete", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"}, modalName:"Item name", modalCost:"Cost", modalDate:"Date", resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend", day:"days" },
-km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", first:"ពាក់កណ្តាលខែទី១ (១–១៥)", second:"ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", delete:"លុប", saveBtn:"រក្សាទុក", deleteBtn:"លុប", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"}, modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", modalDate:"កាលបរិច្ឆេទ", resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ", day:"ថ្ងៃ" }
+en:{ title:"Salary Tracker", first:"First Half (1–15)", second:"Second Half (16–End)", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", delete:"Delete", saveBtn:"Save", deleteBtn:"Delete", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"}, modalName:"Item name", modalCost:"Cost", resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend", day:"days"},
+km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", first:"ពាក់កណ្តាលខែទី១ (១–១៥)", second:"ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", delete:"លុប", saveBtn:"រក្សាទុក", deleteBtn:"លុប", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"}, modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ", day:"ថ្ងៃ"}
 };
 
 let lang = localStorage.getItem("lang") || "en";
@@ -127,13 +125,14 @@ const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
 
 let ctx = null;
 
-// Utility to calculate must remain for daily plan
-function calculateMustRemain(foodList){
-  const spentTotal = foodList.reduce((a,b)=>a.cost+a,0);
-  const remain = budgets.Food - spentTotal;
-  const daysLeft = HALF_DAYS - foodList.length;
-  const perDay = daysLeft>0 ? (remain/daysLeft).toFixed(2) : 0;
-  return { spentTotal, remain, perDay, daysLeft };
+// Calculate must remain for plan
+function calcPlan(list, budget){
+    const spent = list.reduce((a,b)=>a.cost+a,0);
+    const daysSpent = list.length;
+    const daysLeft = HALF_DAYS - daysSpent;
+    const mustRemain = budget - spent;
+    const perDay = daysLeft>0 ? (mustRemain/daysLeft).toFixed(2) : 0;
+    return {spent,mustRemain,perDay,daysLeft};
 }
 
 function render(){
@@ -145,10 +144,10 @@ langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
 resetMonth.textContent=t.resetMonth;
 expName.placeholder=t.modalName;
 expCost.placeholder=t.modalCost;
-expDate.placeholder=t.modalDate;
 
+// Modal buttons
 saveBtn.textContent=t.saveBtn+" 💲";
-deleteBtn.textContent=ctx && ctx.i!==null?t.deleteBtn+" 🧹":t.deleteBtn;
+deleteBtn.textContent=t.deleteBtn+" 🧹";
 deleteBtn.style.display=ctx && ctx.i!==null?"inline-block":"none";
 
 tracker.innerHTML="";
@@ -176,15 +175,19 @@ const over=remain<0;
 halfTotal+=spent;
 html+=`<div class="card p-2 mb-2 ${over?"over-card":""}"><b>${t.items[v]} ($${varBudget})</b>
 <button class="btn btn-sm btn-primary float-end btn-small" onclick="add('${h.key}','${v}')">${t.add} ➕</button>
-${list.map((e,i)=>`<div class="expense">${e.date} | ${e.name} $${e.cost}<button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${i})">✏️</button></div>`).join('')}
+${list.map((e,i)=>`<div class="expense">${e.name} $${e.cost}<button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${i})">✏️</button></div>`).join('')}
 <div class="${over?"over":""}">${t.spent}: $${spent} | ${over?`${t.over} $${Math.abs(remain)}`:`${t.remain}: $${remain}`}</div>
 <div class="progress"><div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}" style="width:${Math.min((spent/varBudget)*100,100)}%"></div></div></div>`;
-});
 
-// Food plan with must remain
-const foodList = load(key(h.key,"Food"));
-const {spentTotal, remain, perDay, daysLeft} = calculateMustRemain(foodList);
-html+=`<div class="food-plan"><i class="fa fa-utensils"></i>${t.items.Food} ($${budgets.Food})<br>${t.spent}: $${spentTotal} | ${t.remain}: $${Math.max(remain,0)} | ${t.needRemain}: $${remain}<br><i class="fa fa-calendar"></i>${t.needSpend} ~$${perDay}/${t.day} សម្រាប់ ${daysLeft} ${t.day}</div>`;
+// Special for Food plan
+if(v==="Food"){
+    const plan = calcPlan(list, budgets.Food);
+    html+=`<div class="food-plan"><i class="fa fa-utensils"></i>${t.items.Food} ($${budgets.Food})<br>
+    ${t.spent}: $${plan.spent} | ${t.remain}: $${Math.max(budgets.Food - plan.spent,0)} | ${t.needRemain}: $${plan.mustRemain}<br>
+    <i class="fa fa-calendar"></i>${t.needSpend} ~$${plan.perDay}/${t.day} សម្រាប់ ${plan.daysLeft} ${t.day}</div>`;
+}
+
+});
 
 html+=`<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">Subtotal: $${halfTotal} | Remaining: $${160-halfTotal}</div>`;
 html+=`</div></div></div>`;
@@ -198,13 +201,13 @@ grandRemain.textContent=SALARY-grandTotal;
 
 // Functions
 function toggleFixed(h,c,v){ save(key(h,c),v?[{paid:true}]:[]); render(); }
-function add(h,c){ ctx={h,c,i:null}; expName.value=""; expCost.value=""; expDate.value=""; modalTitle.textContent=i18n[lang].edit; render(); new bootstrap.Modal(expModal).show();}
-function edit(h,c,i){ const l=load(key(h,c)); ctx={h,c,i}; expName.value=l[i].name; expCost.value=l[i].cost; expDate.value=l[i].date; modalTitle.textContent=i18n[lang].edit; render(); new bootstrap.Modal(expModal).show(); }
+function add(h,c){ ctx={h,c,i:null}; expName.value=""; expCost.value=""; modalTitle.textContent=i18n[lang].edit; render(); new bootstrap.Modal(expModal).show();}
+function edit(h,c,i){ const l=load(key(h,c)); ctx={h,c,i}; expName.value=l[i].name; expCost.value=l[i].cost; modalTitle.textContent=i18n[lang].edit; render(); new bootstrap.Modal(expModal).show(); }
 
 saveBtn.onclick = ()=>{
 if(!ctx) return;
 const l = load(key(ctx.h,ctx.c));
-const e = {name:expName.value, cost:+expCost.value, date:expDate.value||new Date().toISOString().split('T')[0]};
+const e = {name:expName.value, cost:+expCost.value};
 ctx.i===null?l.push(e):(l[ctx.i]=e);
 save(key(ctx.h,ctx.c),l);
 bootstrap.Modal.getInstance(expModal).hide();
