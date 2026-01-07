@@ -72,45 +72,15 @@ const SALARY = 320;
 const HALF_DAYS = 15;
 
 const i18n = {
-  en:{
-    title:"Salary Tracker",
-    first:"First Half (1–15)",
-    second:"Second Half (16–End)",
-    spent:"Spent",
-    remain:"Remaining",
-    over:"OVER",
-    add:"Add",
-    edit:"Edit Expense",
-    items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"},
-    modalName:"Item name",
-    modalCost:"Cost",
-    resetMonth:"Reset ↺",
-    needRemain:"Need remain",
-    needSpend:"Need spend"
-  },
-  km:{
-    title:"តារាងគ្រប់គ្រងប្រាក់ខែ",
-    first:"ពាក់កណ្តាលខែទី១ (១–១៥)",
-    second:"ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)",
-    spent:"ចំណាយ",
-    remain:"នៅសល់",
-    over:"លើស",
-    add:"បន្ថែម",
-    edit:"កែចំណាយ",
-    items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"},
-    modalName:"ឈ្មោះទំនិញ",
-    modalCost:"ចំណាយ",
-    resetMonth:"សំអាត ↺",
-    needRemain:"ត្រូវនៅសល់",
-    needSpend:"ត្រូវចំណាយ"
-  }
+en:{ title:"Salary Tracker", first:"First Half (1–15)", second:"Second Half (16–End)", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", delete:"Delete", saveBtn:"Save", deleteBtn:"Delete", needRemain:"Need remain", needSpend:"Need spend", day:"days", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"}, modalName:"Item name", modalCost:"Cost", resetMonth:"Reset ↺"},
+km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", first:"ពាក់កណ្តាលខែទី១ (១–១៥)", second:"ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", delete:"លុប", saveBtn:"រក្សាទុក", deleteBtn:"លុប", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ", day:"ថ្ងៃ", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"}, modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", resetMonth:"សំអាត ↺"}
 };
 
 let lang = localStorage.getItem("lang") || "en";
 
 const halves = [
-  { key:"first", fixed:["Saving"], vars:["Food","Gas","Other"] },
-  { key:"second", fixed:["House"], vars:["Food","Oil","Other"] }
+{ key:"first", fixed:["Saving"], vars:["Food","Gas","Other"]},
+{ key:"second", fixed:["House"], vars:["Food","Oil","Other"]}
 ];
 
 const budgets = { Food:60, Gas:15, House:70, Saving:60, Oil:15, Other:25 };
@@ -127,121 +97,130 @@ const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let ctx=null;
 
 function render(){
-  const t=i18n[lang];
-  title.textContent=t.title;
-  spentLabel.textContent=t.spent;
-  remainLabel.textContent=t.remain;
-  langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
-  resetMonth.textContent=t.resetMonth;
+const t=i18n[lang];
+title.textContent=t.title;
+spentLabel.textContent=t.spent;
+remainLabel.textContent=t.remain;
+langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
+resetMonth.textContent=t.resetMonth;
+expName.placeholder=t.modalName;
+expCost.placeholder=t.modalCost;
+saveBtn.textContent=t.saveBtn+" 💲";
+deleteBtn.textContent=t.deleteBtn+" 🧹";
 
-  tracker.innerHTML="";
-  let grandTotal=0;
+tracker.innerHTML="";
+let grandTotal=0;
 
-  halves.forEach(h=>{
-    let halfTotal=0;
-    let html=`<div class="col-md-6 mb-3">
-      <div class="card">
-      <div class="card-header bg-primary text-white">${t[h.key]}</div>
-      <div class="card-body">`;
+halves.forEach(h=>{
+let halfTotal=0;
 
-    h.fixed.forEach(f=>{
-      const paid=load(key(h.key,f)).length>0;
-      if(paid) halfTotal+=budgets[f];
-      html+=`<div class="fixed">${t.items[f]} $${budgets[f]}
-        <input type="checkbox" class="float-end" ${paid?"checked":""}
-        onchange="toggleFixed('${h.key}','${f}',this.checked)">
-      </div>`;
-    });
+// ---- FOOD CALC FOR SUBTOTAL ----
+const foodList = load(key(h.key,"Food"));
+const foodSpent = foodList.reduce((a,b)=>a+b.cost,0);
+const foodRemain = budgets.Food - foodSpent;
+const daysUsed = foodList.length || 0;
+const daysLeft = Math.max(HALF_DAYS - daysUsed, 1);
+const perDay = (foodRemain / daysLeft).toFixed(2);
+// --------------------------------
 
-    h.vars.forEach(v=>{
-      let varBudget=budgets[v];
-      if(v==="Other" && h.key==="second") varBudget-=10;
+let html=`<div class="col-md-6 mb-3">
+<div class="card shadow-sm">
+<div class="card-header bg-primary text-white">${t[h.key]}</div>
+<div class="card-body">`;
 
-      const list=load(key(h.key,v));
-      let spent=list.reduce((a,b)=>a+b.cost,0);
-      let remain=varBudget-spent;
-      let over=remain<0;
-      halfTotal+=spent;
+h.fixed.forEach(f=>{
+const paid=load(key(h.key,f)).length>0;
+if(paid) halfTotal+=budgets[f];
+html+=`<div class="fixed">${t.items[f]} $${budgets[f]}
+<input type="checkbox" class="float-end" ${paid?"checked":""}
+onchange="toggleFixed('${h.key}','${f}',this.checked)">
+</div>`;
+});
 
-      html+=`<div class="card p-2 mb-2 ${over?"over-card":""}">
-        <b>${t.items[v]} ($${varBudget})</b>
-        <button class="btn btn-sm btn-primary float-end btn-small"
-          onclick="add('${h.key}','${v}')">${t.add} ➕</button>
+h.vars.forEach(v=>{
+let varBudget=budgets[v];
+if(v==="Other" && h.key==="second") varBudget-=10;
 
-        ${list.map((e,i)=>`
-          <div class="expense">${e.name} $${e.cost}
-            <button class="btn btn-sm btn-light btn-small"
-              onclick="edit('${h.key}','${v}',${i})">✏️</button>
-          </div>`).join("")}
+const list=load(key(h.key,v));
+const spent=list.reduce((a,b)=>a+b.cost,0);
+const remain=varBudget-spent;
+const over=remain<0;
+halfTotal+=spent;
 
-        <div class="${over?"over":""}">
-          ${t.spent}: $${spent} | ${over?`${t.over} $${Math.abs(remain)}`:`${t.remain}: $${remain}`}
-        </div>`;
+html+=`
+<div class="card p-2 mb-2 ${over?"over-card":""}">
+<b>${t.items[v]} ($${varBudget})</b>
+<button class="btn btn-sm btn-primary float-end btn-small"
+onclick="add('${h.key}','${v}')">${t.add} ➕</button>
 
-      if(v==="Food"){
-        const daysSpent=list.length||1;
-        const daysLeft=Math.max(HALF_DAYS-daysSpent,1);
-        const needRemain=budgets[v]-spent;
-        const perDay=(needRemain/daysLeft).toFixed(2);
+${list.map((e,i)=>`
+<div class="expense">
+${e.name} $${e.cost}
+<button class="btn btn-sm btn-light btn-small"
+onclick="edit('${h.key}','${v}',${i})">✏️</button>
+</div>`).join("")}
 
-        html+=`
-        <div class="mt-2 p-2 rounded" style="background:#eef6ff;font-size:14px">
-          ${t.items[v]} ($${budgets[v]})<br>
-          ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${needRemain}<br>
-          📅 ${t.needSpend} ~$${perDay}/ថ្ងៃ សម្រាប់ ${daysLeft} ថ្ងៃ
-        </div>`;
-      }
+<div class="${over?"over":""}">
+${t.spent}: $${spent} |
+${over?`${t.over} $${Math.abs(remain)}`:`${t.remain}: $${remain}`}
+</div>
 
-      html+=`
-        <div class="progress">
-          <div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}"
-            style="width:${Math.min((spent/varBudget)*100,100)}%"></div>
-        </div>
-      </div>`;
-    });
+<div class="progress">
+<div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}"
+style="width:${Math.min((spent/varBudget)*100,100)}%"></div>
+</div>
+</div>`;
+});
 
-    html+=`<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">
-      Subtotal: $${halfTotal} | Remaining: $${160-halfTotal}
-    </div></div></div></div>`;
+html+=`
+<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">
+${t.spent}: $${foodSpent} | ${t.remain}: $${Math.max(foodRemain,0)} | ${t.needRemain}: $${foodRemain}
+<br>
+📅 ${t.needSpend} ~$${perDay}/${t.day} ${daysLeft} ${t.day}
+</div>
+</div></div></div>`;
 
-    tracker.innerHTML+=html;
-    grandTotal+=halfTotal;
-  });
+tracker.innerHTML+=html;
+grandTotal+=halfTotal;
+});
 
-  grandSpent.textContent=grandTotal;
-  grandRemain.textContent=SALARY-grandTotal;
+grandSpent.textContent=grandTotal;
+grandRemain.textContent=SALARY-grandTotal;
 }
 
-function toggleFixed(h,c,v){ save(key(h,c),v?[{paid:true}]:[]); render(); }
-function add(h,c){ ctx={h,c,i:null}; expName.value=""; expCost.value=""; new bootstrap.Modal(expModal).show(); }
-function edit(h,c,i){ const l=load(key(h,c)); ctx={h,c,i}; expName.value=l[i].name; expCost.value=l[i].cost; new bootstrap.Modal(expModal).show(); }
+function toggleFixed(h,c,v){save(key(h,c),v?[{paid:true}]:[]);render();}
+function add(h,c){ctx={h,c,i:null};expName.value="";expCost.value="";new bootstrap.Modal(expModal).show();}
+function edit(h,c,i){const l=load(key(h,c));ctx={h,c,i};expName.value=l[i].name;expCost.value=l[i].cost;new bootstrap.Modal(expModal).show();}
 
 saveBtn.onclick=()=>{
-  if(!ctx) return;
-  const l=load(key(ctx.h,ctx.c));
-  const e={name:expName.value,cost:+expCost.value};
-  ctx.i===null?l.push(e):(l[ctx.i]=e);
-  save(key(ctx.h,ctx.c),l);
-  bootstrap.Modal.getInstance(expModal).hide();
-  ctx=null;
-  render();
+if(!ctx) return;
+const l=load(key(ctx.h,ctx.c));
+const e={name:expName.value,cost:+expCost.value};
+ctx.i===null?l.push(e):(l[ctx.i]=e);
+save(key(ctx.h,ctx.c),l);
+bootstrap.Modal.getInstance(expModal).hide();
+ctx=null;render();
 };
 
 deleteBtn.onclick=()=>{
-  if(!ctx||ctx.i===null) return;
-  const l=load(key(ctx.h,ctx.c));
-  l.splice(ctx.i,1);
-  save(key(ctx.h,ctx.c),l);
-  bootstrap.Modal.getInstance(expModal).hide();
-  ctx=null;
-  render();
+if(!ctx||ctx.i===null) return;
+const l=load(key(ctx.h,ctx.c));
+l.splice(ctx.i,1);
+save(key(ctx.h,ctx.c),l);
+bootstrap.Modal.getInstance(expModal).hide();
+ctx=null;render();
 };
 
-langBtn.onclick=()=>{ lang=lang==="en"?"km":"en"; localStorage.setItem("lang",lang); render(); }
+langBtn.onclick=()=>{lang=lang==="en"?"km":"en";localStorage.setItem("lang",lang);render();}
 monthSelect.onchange=render;
-resetMonth.onclick=()=>{ halves.forEach(h=>[...h.fixed,...h.vars].forEach(c=>localStorage.removeItem(key(h.key,c)))); render(); }
+resetMonth.onclick=()=>{halves.forEach(h=>[...h.fixed,...h.vars].forEach(c=>localStorage.removeItem(key(h.key,c))));render();}
 
 render();
 </script>
+
+
+
+
+
 </body>
 </html>
