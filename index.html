@@ -11,26 +11,21 @@
 <style>
 body { font-family:"Poppins","KhmerOS",sans-serif; background:#f4f7fb; padding:20px; }
 h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
-.card { border-radius:16px; transition:0.3s; }
+.card { border-radius:16px; transition:0.3s; margin-bottom:15px; }
 .card:hover { transform:translateY(-3px); box-shadow:0 8px 16px rgba(0,0,0,0.15); }
 .fixed { background:#eef2ff; padding:8px; border-radius:8px; margin-bottom:5px; font-weight:500; }
-.expense { display:flex; flex-direction:column; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; font-size:14px; }
+.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; font-size:14px; align-items:center; flex-wrap:wrap; }
 .over-card { border:2px solid #dc3545; background:#ffe6e6; }
 .over { color:#dc3545; font-weight:600; }
 .progress { height:14px; border-radius:20px; margin-top:5px; }
 .lang-btn { position:fixed; top:15px; right:15px; z-index:10; }
 .btn-small { padding:0.2rem 0.5rem; font-size:0.8rem; }
 
-/* Modal buttons */
-#saveBtn { background-color:#28a745; color:white; transition:0.3s; width:100%; margin-bottom:5px; }
+#saveBtn { background-color:#28a745; color:white; width:100%; margin-bottom:5px; }
 #saveBtn:hover { background-color:#218838; }
-#deleteBtn { background-color:#dc3545; color:white; transition:0.3s; width:100%; }
+#deleteBtn { background-color:#dc3545; color:white; width:100%; }
 #deleteBtn:hover { background-color:#c82333; }
 #expName,#expCost,#expDate { margin-bottom:10px; }
-
-@media (max-width:576px){
-  .card-body { font-size:14px; }
-}
 </style>
 </head>
 <body>
@@ -78,23 +73,10 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const SALARY = 320;
+const DAILY_MAX = 4; // Food per day max
 const i18n = {
-  en:{
-    title:"Salary Tracker",
-    spent:"Spent", remain:"Remaining", over:"OVER",
-    add:"Add", edit:"Edit Expense", saveBtn:"Save", deleteBtn:"Delete", subtotal:"Subtotal",
-    items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"},
-    modalName:"Item name", modalCost:"Cost", modalDate:"Date",
-    resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend/day"
-  },
-  km:{
-    title:"តារាងគ្រប់គ្រងប្រាក់ខែ",
-    spent:"ចំណាយ", remain:"នៅសល់", over:"លើស",
-    add:"បន្ថែម", edit:"កែចំណាយ", saveBtn:"រក្សាទុក", deleteBtn:"លុប", subtotal:"សរុប",
-    items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"},
-    modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", modalDate:"កាលបរិច្ឆេទ",
-    resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ/ថ្ងៃ"
-  }
+  en:{ title:"Salary Tracker", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", saveBtn:"Save", deleteBtn:"Delete", subtotal:"Subtotal", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"}, resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend/day"},
+  km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", saveBtn:"រក្សាទុក", deleteBtn:"លុប", subtotal:"សរុប", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"}, resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ/ថ្ងៃ"}
 };
 
 let lang = localStorage.getItem("lang") || "en";
@@ -123,9 +105,6 @@ function render(){
   remainLabel.textContent=t.remain;
   langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
   resetMonth.textContent=t.resetMonth;
-  expName.placeholder=t.modalName;
-  expCost.placeholder=t.modalCost;
-  expDate.placeholder=t.modalDate;
   saveBtn.textContent=t.saveBtn+" 💲";
   deleteBtn.textContent=t.deleteBtn+" 🧹";
   deleteBtn.style.display=ctx && ctx.i!==null?"inline-block":"none";
@@ -159,24 +138,25 @@ function render(){
       // Sort by date
       list.sort((a,b)=>new Date(a.date)-new Date(b.date));
 
-      // Grouped by date
+      // Each expense on its own line
       let itemsHTML="";
       list.forEach(e=>{
         itemsHTML+=`<div class="expense">${e.date} | ${e.name} $${e.cost} 
           <button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${list.indexOf(e)})">✏️</button></div>`;
       });
 
-      // Food plan
+      // Food card
       let foodPlan="";
       if(v==="Food"){
         const today=new Date();
         const dayOfMonth=today.getDate();
         let endDay=(h.key==="first"?15:new Date(today.getFullYear(),today.getMonth()+1,0).getDate());
         const daysLeft=endDay-dayOfMonth+1;
-        const maxPerDay=DAILY_MAX_FOOD(list, varBudget, daysLeft);
+        const maxPerDay=DAILY_MAX; // system max per day
+        const mustRemain=(daysLeft*maxPerDay).toFixed(2);
         foodPlan=`<div class="mt-2 p-2 rounded" style="background:#eef6ff;font-size:14px">
-          ${t.items[v]} ($${varBudget})<br>${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${(daysLeft*maxPerDay).toFixed(2)}<br>
-          📅 ${t.needSpend} ~$${maxPerDay.toFixed(2)}/ថ្ងៃ សម្រាប់ ${daysLeft} ថ្ងៃ
+          ${t.items[v]} ($${varBudget})<br>${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${mustRemain}<br>
+          📅 ${lang==="en"?daysLeft+" day left": "នៅសល់ "+daysLeft+" ថ្ងៃ"} 
         </div>`;
       }
 
@@ -198,11 +178,6 @@ function render(){
 
   grandSpent.textContent=grandTotal.toFixed(2);
   grandRemain.textContent=(SALARY-grandTotal).toFixed(2);
-}
-
-function DAILY_MAX_FOOD(list, budget, daysLeft){
-  const spent=list.reduce((a,b)=>a+b.cost,0);
-  return (budget-spent)/daysLeft;
 }
 
 // Functions
