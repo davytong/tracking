@@ -15,7 +15,7 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 .card { border-radius:16px; transition:0.3s; }
 .card:hover { transform:translateY(-3px); box-shadow:0 8px 16px rgba(0,0,0,0.15); }
 .fixed { background:#eef2ff; padding:8px; border-radius:8px; margin-bottom:5px; font-weight:500; }
-.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; align-items:center; font-size:14px; flex-wrap:wrap; }
+.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; align-items:center; flex-wrap:wrap; font-size:14px; }
 .over-card { border:2px solid #dc3545; background:#ffe6e6; }
 .over { color:#dc3545; font-weight:600; }
 .progress { height:14px; border-radius:20px; margin-top:5px; }
@@ -77,6 +77,7 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 <script>
 // ====== CONFIG ======
 const SALARY = 320;
+const MAX_FOOD_PER_DAY = 4; // daily max spend for food
 const i18n = {
 en:{ title:"Salary Tracker", spent:"Spent", remain:"Remaining", over:"OVER", add:"Add", edit:"Edit Expense", saveBtn:"Save", deleteBtn:"Delete", modalName:"Item name", modalCost:"Cost", resetMonth:"Reset ↺", needRemain:"Need remain", needSpend:"Need spend", items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"} },
 km:{ title:"តារាងគ្រប់គ្រងប្រាក់ខែ", spent:"ចំណាយ", remain:"នៅសល់", over:"លើស", add:"បន្ថែម", edit:"កែចំណាយ", saveBtn:"រក្សាទុក", deleteBtn:"លុប", modalName:"ឈ្មោះទំនិញ", modalCost:"ចំណាយ", resetMonth:"សំអាត ↺", needRemain:"ត្រូវនៅសល់", needSpend:"ត្រូវចំណាយ", items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"} }
@@ -132,11 +133,10 @@ function render(){
 
   tracker.innerHTML="";
   let grandTotal=0;
+  const daysLeft = getDaysLeftInHalf();
 
   halves.forEach(h=>{
     let halfTotal=0;
-    const daysLeft = getDaysLeftInHalf();
-
     let html=`<div class="col-md-6 mb-3"><div class="card shadow-sm"><div class="card-header bg-primary text-white">${h.key==="first"?t.first:t.second}</div><div class="card-body">`;
 
     // Fixed
@@ -164,12 +164,13 @@ function render(){
         <div class="progress"><div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}" style="width:${Math.min((spent/varBudget)*100,100)}%"></div></div>
       </div>`;
 
-      // Food per-day
+      // Food per-day using max daily spend
       if(v==="Food" && h.key===getCurrentHalf()){
-        const perDay = (remain/daysLeft).toFixed(2);
+        const needRemain = daysLeft * MAX_FOOD_PER_DAY;
+        const perDay = (needRemain/daysLeft).toFixed(2);
         html+=`<div class="mt-2 p-2 rounded" style="background:#eef6ff;font-size:14px">
           ${t.items[v]} ($${varBudget})<br>
-          ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${remain}<br>
+          ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${needRemain}<br>
           📅 ${t.needSpend} ~$${perDay}/ថ្ងៃ សម្រាប់ ${daysLeft} ថ្ងៃ
         </div>`;
       }
