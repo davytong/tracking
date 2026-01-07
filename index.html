@@ -111,15 +111,23 @@ const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let ctx=null;
 
 function render(){
-  const t=i18n[lang];
-  title.textContent=t.title;
-  spentLabel.textContent=t.spent;
-  remainLabel.textContent=t.remain;
-  langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
-  resetMonth.textContent=t.resetMonth;
-  saveBtn.textContent=t.saveBtn+" 💲";
-  deleteBtn.textContent=t.deleteBtn+" 🧹";
-  deleteBtn.style.display=ctx && ctx.i!==null?"inline-block":"none";
+  const t = i18n[lang];
+
+  title.textContent = t.title;
+  spentLabel.textContent = t.spent;
+  remainLabel.textContent = t.remain;
+  langBtn.textContent = lang==="en"?"ខ្មែរ":"EN";
+  resetMonth.textContent = t.resetMonth;
+
+  // Modal translations
+  expName.placeholder = t.modalName || "Item name";
+  expCost.placeholder = t.modalCost || "Cost";
+  expDate.placeholder = t.modalDate || "Date";
+  saveBtn.textContent = t.saveBtn + " 💲";
+  deleteBtn.textContent = t.deleteBtn + " 🧹";
+  deleteBtn.style.display = ctx && ctx.i!==null ? "inline-block" : "none";
+
+  // ... 
 
   tracker.innerHTML="";
   let grandTotal=0;
