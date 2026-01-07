@@ -99,7 +99,7 @@ h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
 
 <script>
 const SALARY = 320;
-const HALF_DAYS = 15;
+const HALF_DAYS = 15; // days in first half for Food plan
 
 const i18n = {
 en:{
@@ -185,16 +185,18 @@ html+=`<div class="card p-2 mb-2 ${over?"over-card":""}"><b>${t.items[v]} ($${va
 ${list.map((e,i)=>`<div class="expense">${e.name} $${e.cost}<button class="btn btn-sm btn-light btn-small" onclick="edit('${h.key}','${v}',${i})">✏️</button></div>`).join('')}
 <div class="${over?"over":""}">${t.spent}: $${spent} | ${over?`${t.over} $${Math.abs(remain)}`:`${t.remain}: $${remain}`}</div>
 <div class="progress"><div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}" style="width:${Math.min((spent/varBudget)*100,100)}%"></div></div></div>`;
+
+  // Food daily plan logic
+  if(v==="Food"){
+    const totalDays = HALF_DAYS;
+    const daysLeft = totalDays - list.length;
+    const dailyPlan = budgets.Food / totalDays;
+    const needRemain = (daysLeft>0)?(dailyPlan*daysLeft).toFixed(2):0;
+    html+=`<div class="food-plan"><i class="fa fa-utensils"></i>${t.items.Food} ($${budgets.Food})<br>
+    ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${needRemain}<br>
+    <i class="fa fa-calendar"></i>${t.needSpend} ~$${dailyPlan.toFixed(2)}/${t.day} សម្រាប់ ${daysLeft} ${t.day}</div>`;
+  }
 });
-
-// Food plan display
-const foodList = load(key(h.key,"Food"));
-const foodSpent = foodList.reduce((a,b)=>a+b.cost,0);
-const foodRemain = budgets.Food - foodSpent;
-const daysLeft = HALF_DAYS;
-const perDay = (foodRemain/daysLeft).toFixed(2);
-
-html+=`<div class="food-plan"><i class="fa fa-utensils"></i>${t.items.Food} ($${budgets.Food})<br>${t.spent}: $${foodSpent} | ${t.remain}: $${Math.max(foodRemain,0)} | ${t.needRemain}: $${foodRemain}<br><i class="fa fa-calendar"></i>${t.needSpend} ~$${perDay}/${t.day} សម្រាប់ ${daysLeft} ${t.day}</div>`;
 
 html+=`<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">Subtotal: $${halfTotal} | Remaining: $${160-halfTotal}</div>`;
 html+=`</div></div></div>`;
