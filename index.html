@@ -2,24 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>💸 Salary Tracker</title>
+<title>💸Salary Tracker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 
 <style>
 @font-face { font-family:"KhmerOS"; src:local("Khmer OS Siemreap"); }
-body { font-family:"KhmerOS",sans-serif; background:#f4f7fb; padding:20px; }
-h1 { text-align:center; color:#0d6efd; margin-bottom:20px; }
-
-.card { border-radius:14px; }
-.fixed { background:#eef2ff; padding:8px; border-radius:8px; margin-bottom:6px; }
-.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; font-size:14px; }
-.over { color:#dc3545; font-weight:bold; }
-.lang-btn { position:fixed; top:15px; right:15px; }
-.food-box { background:#e8f3ff; padding:10px; border-radius:10px; margin-top:8px; }
-.warn { color:#dc3545; font-weight:bold; }
+body { font-family:"Poppins","KhmerOS",sans-serif; background:#f4f7fb; padding:20px; }
+h1 { text-align:center; color:#0d6efd; font-weight:600; margin-bottom:20px; }
+.card { border-radius:16px; transition:0.3s; }
+.card:hover { transform:translateY(-3px); box-shadow:0 8px 16px rgba(0,0,0,0.15); }
+.fixed { background:#eef2ff; padding:8px; border-radius:8px; margin-bottom:5px; font-weight:500; }
+.expense { display:flex; justify-content:space-between; background:#f8f9fa; padding:6px 10px; border-radius:8px; margin-bottom:4px; align-items:center; font-size:14px; }
+.over-card { border:2px solid #dc3545; background:#ffe6e6; }
+.over { color:#dc3545; font-weight:600; }
+.progress { height:14px; border-radius:20px; margin-top:5px; }
+.lang-btn { position:fixed; top:15px; right:15px; z-index:10; }
+.btn-small { padding:0.2rem 0.5rem; font-size:0.8rem; }
 </style>
 </head>
 
@@ -28,98 +30,95 @@ h1 { text-align:center; color:#0d6efd; margin-bottom:20px; }
 <h1 id="title"></h1>
 
 <div class="container">
-<select id="monthSelect" class="form-select mb-3 w-50"></select>
+  <div class="d-flex justify-content-between mb-3 flex-wrap">
+    <select id="monthSelect" class="form-select w-50 mb-2"></select>
+    <button class="btn btn-danger ms-2 mb-2" id="resetMonth">Reset ↺</button>
+  </div>
 
-<div class="row" id="tracker"></div>
+  <div class="row" id="tracker"></div>
 
-<div class="card mt-4">
-<div class="card-body text-center fw-bold">
-<span id="spentLabel"></span>: $<span id="grandSpent">0</span> |
-<span id="remainLabel"></span>: $<span id="grandRemain">0</span>
-</div>
-</div>
+  <div class="card mt-4 shadow-sm">
+    <div class="card-body text-center fw-bold">
+      <span id="spentLabel"></span>: $<span id="grandSpent">0</span> |
+      <span id="remainLabel"></span>: $<span id="grandRemain">0</span>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
 <div class="modal fade" id="expModal">
-<div class="modal-dialog modal-dialog-centered">
-<div class="modal-content">
-<div class="modal-header">
-<h5 id="modalTitle"></h5>
-<button class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body">
-<input id="expName" class="form-control mb-2" />
-<input id="expCost" type="number" class="form-control" />
-</div>
-<div class="modal-footer">
-<button class="btn btn-danger" id="deleteBtn"></button>
-<button class="btn btn-success" id="saveBtn"></button>
-</div>
-</div>
-</div>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="modalTitle"></h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input id="expName" class="form-control mb-2" />
+        <input id="expCost" type="number" class="form-control" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="deleteBtn">🧹</button>
+        <button class="btn btn-success" id="saveBtn">💲</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 const SALARY = 320;
-const HALF = 160;
-const FOOD_PLAN_DAY = 6;
 const HALF_DAYS = 15;
 
 const i18n = {
-km:{
-title:"តារាងគ្រប់គ្រងប្រាក់ខែ",
-first:"ពាក់កណ្តាលខែទី១",
-second:"ពាក់កណ្តាលខែទី២",
-spent:"ចំណាយ",
-remain:"នៅសល់",
-add:"បន្ថែម",
-edit:"កែចំណាយ",
-save:"រក្សាទុក",
-del:"លុប",
-food:"អាហារ",
-gas:"សាំង",
-oil:"ប្រេង",
-other:"ផ្សេងៗ",
-need:"ត្រូវនៅសល់",
-perday:"ត្រូវចំណាយ",
-plan:"ផែនការ 60/ពាក់កណ្តាល → $6/ថ្ងៃ"
-},
-en:{
-title:"Salary Tracker",
-first:"First Half",
-second:"Second Half",
-spent:"Spent",
-remain:"Remaining",
-add:"Add",
-edit:"Edit",
-save:"Save",
-del:"Delete",
-food:"Food",
-gas:"Gas",
-oil:"Oil",
-other:"Other",
-need:"Need Remaining",
-perday:"Need per day",
-plan:"Plan 60/half → $6/day"
-}
+  en:{
+    title:"Salary Tracker",
+    first:"First Half (1–15)",
+    second:"Second Half (16–End)",
+    spent:"Spent",
+    remain:"Remaining",
+    over:"OVER",
+    add:"Add",
+    edit:"Edit Expense",
+    items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"},
+    modalName:"Item name",
+    modalCost:"Cost",
+    resetMonth:"Reset ↺",
+    needRemain:"Need remain",
+    needSpend:"Need spend"
+  },
+  km:{
+    title:"តារាងគ្រប់គ្រងប្រាក់ខែ",
+    first:"ពាក់កណ្តាលខែទី១ (១–១៥)",
+    second:"ពាក់កណ្តាលខែទី២ (១៦–ចុងខែ)",
+    spent:"ចំណាយ",
+    remain:"នៅសល់",
+    over:"លើស",
+    add:"បន្ថែម",
+    edit:"កែចំណាយ",
+    items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"},
+    modalName:"ឈ្មោះទំនិញ",
+    modalCost:"ចំណាយ",
+    resetMonth:"សំអាត ↺",
+    needRemain:"ត្រូវនៅសល់",
+    needSpend:"ត្រូវចំណាយ"
+  }
 };
 
-let lang = localStorage.getItem("lang") || "km";
+let lang = localStorage.getItem("lang") || "en";
 
 const halves = [
-{key:"first", items:["food","gas","other"]},
-{key:"second", items:["food","oil","other"]}
+  { key:"first", fixed:["Saving"], vars:["Food","Gas","Other"] },
+  { key:"second", fixed:["House"], vars:["Food","Oil","Other"] }
 ];
 
-const budgets = { food:60, gas:15, oil:15, other:25 };
+const budgets = { Food:60, Gas:15, House:70, Saving:60, Oil:15, Other:25 };
 
 const monthSelect = document.getElementById("monthSelect");
-const year = new Date().getFullYear();
-for(let i=1;i<=12;i++) monthSelect.innerHTML+=`<option>${year}-${i}</option>`;
-monthSelect.value=`${year}-${new Date().getMonth()+1}`;
+const y = new Date().getFullYear();
+for(let m=1;m<=12;m++) monthSelect.innerHTML+=`<option>${y}-${m}</option>`;
+monthSelect.value=`${y}-${new Date().getMonth()+1}`;
 
 const key = (h,c)=>`${monthSelect.value}-${h}-${c}`;
 const load = k=>JSON.parse(localStorage.getItem(k)||"[]");
@@ -128,107 +127,120 @@ const save = (k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let ctx=null;
 
 function render(){
-const t=i18n[lang];
-title.textContent=t.title;
-langBtn.textContent=lang==="km"?"EN":"ខ្មែរ";
-tracker.innerHTML="";
-let grand=0;
+  const t=i18n[lang];
+  title.textContent=t.title;
+  spentLabel.textContent=t.spent;
+  remainLabel.textContent=t.remain;
+  langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
+  resetMonth.textContent=t.resetMonth;
 
-halves.forEach(h=>{
-let halfTotal=0;
-let html=`<div class="col-md-6 mb-3"><div class="card">
-<div class="card-header bg-primary text-white">${t[h.key]}</div>
-<div class="card-body">`;
+  tracker.innerHTML="";
+  let grandTotal=0;
 
-h.items.forEach(c=>{
-let budget=budgets[c];
-if(c==="other" && h.key==="second") budget=15;
+  halves.forEach(h=>{
+    let halfTotal=0;
+    let html=`<div class="col-md-6 mb-3">
+      <div class="card">
+      <div class="card-header bg-primary text-white">${t[h.key]}</div>
+      <div class="card-body">`;
 
-const list=load(key(h.key,c));
-const spent=list.reduce((a,b)=>a+b.cost,0);
-const remain=budget-spent;
-halfTotal+=spent;
+    h.fixed.forEach(f=>{
+      const paid=load(key(h.key,f)).length>0;
+      if(paid) halfTotal+=budgets[f];
+      html+=`<div class="fixed">${t.items[f]} $${budgets[f]}
+        <input type="checkbox" class="float-end" ${paid?"checked":""}
+        onchange="toggleFixed('${h.key}','${f}',this.checked)">
+      </div>`;
+    });
 
-html+=`<b>${t[c]} ($${budget})</b>
-<button class="btn btn-sm btn-primary float-end" onclick="add('${h.key}','${c}')">${t.add}</button>`;
+    h.vars.forEach(v=>{
+      let varBudget=budgets[v];
+      if(v==="Other" && h.key==="second") varBudget-=10;
 
-list.forEach((e,i)=>{
-html+=`<div class="expense">${e.name} $${e.cost}
-<button onclick="edit('${h.key}','${c}',${i})">✏️</button></div>`;
-});
+      const list=load(key(h.key,v));
+      let spent=list.reduce((a,b)=>a+b.cost,0);
+      let remain=varBudget-spent;
+      let over=remain<0;
+      halfTotal+=spent;
 
-html+=`<div>${t.spent}: $${spent} | ${t.remain}: $${remain}</div>`;
+      html+=`<div class="card p-2 mb-2 ${over?"over-card":""}">
+        <b>${t.items[v]} ($${varBudget})</b>
+        <button class="btn btn-sm btn-primary float-end btn-small"
+          onclick="add('${h.key}','${v}')">${t.add} ➕</button>
 
-if(c==="food"){
-const daysUsed=list.length;
-const daysLeft=Math.max(HALF_DAYS-daysUsed,1);
-const perDay=(remain/daysLeft).toFixed(2);
+        ${list.map((e,i)=>`
+          <div class="expense">${e.name} $${e.cost}
+            <button class="btn btn-sm btn-light btn-small"
+              onclick="edit('${h.key}','${v}',${i})">✏️</button>
+          </div>`).join("")}
 
-html+=`<div class="food-box">
-${t.need}: $${remain}<br>
-📅 ${t.perday} ~$${perDay}/ថ្ងៃ (${daysLeft} ថ្ងៃ)<br>
-<small>${t.plan}</small>
-${perDay>FOOD_PLAN_DAY?`<div class="warn">⚠️ ចំណាយលើសផែនការ</div>`:""}
-</div>`;
+        <div class="${over?"over":""}">
+          ${t.spent}: $${spent} | ${over?`${t.over} $${Math.abs(remain)}`:`${t.remain}: $${remain}`}
+        </div>`;
+
+      if(v==="Food"){
+        const daysSpent=list.length||1;
+        const daysLeft=Math.max(HALF_DAYS-daysSpent,1);
+        const needRemain=budgets[v]-spent;
+        const perDay=(needRemain/daysLeft).toFixed(2);
+
+        html+=`
+        <div class="mt-2 p-2 rounded" style="background:#eef6ff;font-size:14px">
+          ${t.items[v]} ($${budgets[v]})<br>
+          ${t.spent}: $${spent} | ${t.remain}: $${remain} | ${t.needRemain}: $${needRemain}<br>
+          📅 ${t.needSpend} ~$${perDay}/ថ្ងៃ សម្រាប់ ${daysLeft} ថ្ងៃ
+        </div>`;
+      }
+
+      html+=`
+        <div class="progress">
+          <div class="progress-bar ${over?"bg-danger":spent/varBudget>0.7?"bg-warning":"bg-success"}"
+            style="width:${Math.min((spent/varBudget)*100,100)}%"></div>
+        </div>
+      </div>`;
+    });
+
+    html+=`<div class="card p-2 mt-2 text-center fw-bold" style="background:#eef2ff">
+      Subtotal: $${halfTotal} | Remaining: $${160-halfTotal}
+    </div></div></div></div>`;
+
+    tracker.innerHTML+=html;
+    grandTotal+=halfTotal;
+  });
+
+  grandSpent.textContent=grandTotal;
+  grandRemain.textContent=SALARY-grandTotal;
 }
 
-html+="<hr>";
-});
-
-html+=`<div class="fw-bold text-center">
-Subtotal: $${halfTotal} | Remaining: $${HALF-halfTotal}
-</div></div></div></div>`;
-
-tracker.innerHTML+=html;
-grand+=halfTotal;
-});
-
-grandSpent.textContent=grand;
-grandRemain.textContent=SALARY-grand;
-}
-
-function add(h,c){
-ctx={h,c,i:null};
-expName.value="";
-expCost.value="";
-modalTitle.textContent=i18n[lang].edit;
-new bootstrap.Modal(expModal).show();
-}
-
-function edit(h,c,i){
-const l=load(key(h,c));
-ctx={h,c,i};
-expName.value=l[i].name;
-expCost.value=l[i].cost;
-modalTitle.textContent=i18n[lang].edit;
-new bootstrap.Modal(expModal).show();
-}
+function toggleFixed(h,c,v){ save(key(h,c),v?[{paid:true}]:[]); render(); }
+function add(h,c){ ctx={h,c,i:null}; expName.value=""; expCost.value=""; new bootstrap.Modal(expModal).show(); }
+function edit(h,c,i){ const l=load(key(h,c)); ctx={h,c,i}; expName.value=l[i].name; expCost.value=l[i].cost; new bootstrap.Modal(expModal).show(); }
 
 saveBtn.onclick=()=>{
-const l=load(key(ctx.h,ctx.c));
-const e={name:expName.value,cost:+expCost.value};
-ctx.i===null?l.push(e):l[ctx.i]=e;
-save(key(ctx.h,ctx.c),l);
-bootstrap.Modal.getInstance(expModal).hide();
-render();
+  if(!ctx) return;
+  const l=load(key(ctx.h,ctx.c));
+  const e={name:expName.value,cost:+expCost.value};
+  ctx.i===null?l.push(e):(l[ctx.i]=e);
+  save(key(ctx.h,ctx.c),l);
+  bootstrap.Modal.getInstance(expModal).hide();
+  ctx=null;
+  render();
 };
 
 deleteBtn.onclick=()=>{
-if(ctx.i===null) return;
-const l=load(key(ctx.h,ctx.c));
-l.splice(ctx.i,1);
-save(key(ctx.h,ctx.c),l);
-bootstrap.Modal.getInstance(expModal).hide();
-render();
+  if(!ctx||ctx.i===null) return;
+  const l=load(key(ctx.h,ctx.c));
+  l.splice(ctx.i,1);
+  save(key(ctx.h,ctx.c),l);
+  bootstrap.Modal.getInstance(expModal).hide();
+  ctx=null;
+  render();
 };
 
-langBtn.onclick=()=>{
-lang=lang==="km"?"en":"km";
-localStorage.setItem("lang",lang);
-render();
-};
-
+langBtn.onclick=()=>{ lang=lang==="en"?"km":"en"; localStorage.setItem("lang",lang); render(); }
 monthSelect.onchange=render;
+resetMonth.onclick=()=>{ halves.forEach(h=>[...h.fixed,...h.vars].forEach(c=>localStorage.removeItem(key(h.key,c)))); render(); }
+
 render();
 </script>
 </body>
