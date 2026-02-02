@@ -14,9 +14,8 @@ body{
   background:#f4f7fb;
   padding:20px;
 }
-h1{text-align:center;color:#0d6efd;font-weight:600}
-.card{border-radius:16px;transition:.3s}
-.card:hover{transform:translateY(-3px);box-shadow:0 8px 16px rgba(0,0,0,.15)}
+h1{text-align:center;color:#0d6efd;font-weight:600;margin-bottom:20px}
+.card{border-radius:16px}
 .fixed{background:#eef2ff;padding:8px;border-radius:8px;margin-bottom:6px;font-weight:500}
 .expense{display:flex;justify-content:space-between;align-items:center;background:#f8f9fa;padding:6px 10px;border-radius:8px;margin-bottom:4px;font-size:14px}
 .over-card{border:2px solid #dc3545;background:#ffe6e6}
@@ -25,7 +24,7 @@ h1{text-align:center;color:#0d6efd;font-weight:600}
 .stat.over{color:#dc3545}
 .progress{height:12px;border-radius:20px}
 .lang-btn{position:fixed;top:15px;right:15px;z-index:10}
-.subtotal-card{background:#fff3cd;border:2px solid #ffc107;font-weight:700;text-align:center;padding:10px;border-radius:14px;margin-top:12px}
+.subtotal-card{background:#fff3cd;border:2px solid #ffc107;color:#856404;font-weight:700;text-align:center;padding:10px;border-radius:14px;margin-top:12px}
 .food-plan{background:#eef6ff;padding:8px;border-radius:10px;font-size:14px;margin-top:6px}
 </style>
 </head>
@@ -34,15 +33,6 @@ h1{text-align:center;color:#0d6efd;font-weight:600}
 
 <button class="btn btn-outline-primary lang-btn" id="langBtn">ខ្មែរ</button>
 <h1 id="title"></h1>
-
-<!-- TODAY STATUS -->
-<div class="card mb-3">
-  <div class="card-body text-center fw-bold">
-    📅 <span id="todayDate"></span> |
-    💰 Today: $<span id="todaySpent">0</span> |
-    Limit: $<span id="todayLimit"></span>
-  </div>
-</div>
 
 <div class="container">
   <div class="d-flex mb-3">
@@ -53,10 +43,9 @@ h1{text-align:center;color:#0d6efd;font-weight:600}
   <div class="row" id="tracker"></div>
 
   <div class="card mt-4">
-    <div class="card-body text-center fw-bold" id="totalCard">
+    <div class="card-body text-center fw-bold">
       <span id="spentLabel"></span>: $<span id="grandSpent">0</span> |
       <span id="remainLabel"></span>: $<span id="grandRemain">0</span>
-      <div class="mt-2" id="topSpend"></div>
     </div>
   </div>
 </div>
@@ -70,7 +59,7 @@ h1{text-align:center;color:#0d6efd;font-weight:600}
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <input id="expName" class="form-control mb-2" placeholder="Item">
+        <input id="expName" class="form-control mb-2">
         <div class="input-group mb-2">
           <input id="expCost" type="number" class="form-control">
           <select id="expCurrency" class="form-select">
@@ -94,13 +83,12 @@ h1{text-align:center;color:#0d6efd;font-weight:600}
 /* CONFIG */
 const SALARY=320, DAILY_MAX=4, EXCHANGE_RATE=4000;
 
-/* ICONS */
-const icons={Food:"🍔",Gas:"⛽",House:"🏠",Saving:"💰",Oil:"🛢️",Other:"📦"};
-
 /* I18N */
 const i18n={
-en:{title:"Salary Tracker",spent:"Spent",remain:"Remaining",over:"OVER",add:"Add",edit:"Edit Expense",subtotal:"Subtotal",needRemain:"Must Remain"},
-km:{title:"តារាងគ្រប់គ្រងប្រាក់ខែ",spent:"ចំណាយ",remain:"នៅសល់",over:"លើស",add:"បន្ថែម",edit:"កែចំណាយ",subtotal:"សរុប",needRemain:"ត្រូវនៅសល់"}
+en:{title:"Salary Tracker",spent:"Spent",remain:"Remaining",over:"OVER",add:"Add",edit:"Edit Expense",subtotal:"Subtotal",needRemain:"Must Remain",
+items:{Food:"Food",Gas:"Gas",House:"House",Saving:"Saving",Oil:"Oil",Other:"Other"}},
+km:{title:"តារាងគ្រប់គ្រងប្រាក់ខែ",spent:"ចំណាយ",remain:"នៅសល់",over:"លើស",add:"បន្ថែម",edit:"កែចំណាយ",subtotal:"សរុប",needRemain:"ត្រូវនៅសល់",
+items:{Food:"អាហារ",Gas:"សាំង",House:"ផ្ទះ",Saving:"សន្សំ",Oil:"ប្រេងម៉ូតូ",Other:"ផ្សេងៗ"}}
 };
 let lang=localStorage.getItem("lang")||"en";
 
@@ -116,26 +104,11 @@ const key=(h,c)=>`${monthSelect.value}-${h}-${c}`;
 const load=k=>JSON.parse(localStorage.getItem(k)||"[]");
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 
-/* TODAY */
-function renderToday(){
-  const today=new Date().toISOString().split("T")[0];
-  todayDate.textContent=today;
-  todayLimit.textContent=DAILY_MAX.toFixed(2);
-  let total=0;
-  halves.forEach(h=>h.vars.forEach(c=>{
-    load(key(h.key,c)).forEach(e=>{if(e.date===today)total+=e.cost});
-  }));
-  todaySpent.textContent=total.toFixed(2);
-}
-
-/* TOP SPEND */
-function renderTopSpend(){
-  let map={},top="",max=0;
-  halves.forEach(h=>[...h.fixed,...h.vars].forEach(c=>{
-    load(key(h.key,c)).forEach(e=>map[c]=(map[c]||0)+e.cost);
-  }));
-  for(let k in map){if(map[k]>max){max=map[k];top=k}}
-  topSpend.textContent=max?`🔥 Highest: ${top} $${max.toFixed(2)}`:"";
+function getSalaryHalfInfo(d=new Date()){
+  const day=d.getDate(),m=d.getMonth(),y=d.getFullYear();
+  if(day>=5&&day<=20) return{half:"first",daysLeft:20-day+1};
+  const end=day>20?new Date(y,m+1,4):new Date(y,m,4);
+  return{half:"second",daysLeft:Math.floor((end-d)/86400000)+1};
 }
 
 /* RENDER */
@@ -147,16 +120,18 @@ function render(){
   langBtn.textContent=lang==="en"?"ខ្មែរ":"EN";
   tracker.innerHTML="";
   let grand=0;
+  const todayInfo=getSalaryHalfInfo();
 
   halves.forEach(h=>{
     let halfTotal=0;
     let html=`<div class="col-md-6 mb-3"><div class="card">
-    <div class="card-header bg-primary text-white">${h.key==="first"?"1st Half":"2nd Half"}</div>
+    <div class="card-header bg-primary text-white">${h.key==="first"?"1st Half (5–20)":"2nd Half (21–4)"}</div>
     <div class="card-body">`;
 
+    /* FIXED BUDGETS – ALWAYS COUNT */
     h.fixed.forEach(f=>{
       halfTotal+=budgets[f];
-      html+=`<div class="fixed">${icons[f]} ${f} $${budgets[f]}</div>`;
+      html+=`<div class="fixed">${t.items[f]} $${budgets[f]}</div>`;
     });
 
     h.vars.forEach(v=>{
@@ -164,15 +139,24 @@ function render(){
       const spent=list.reduce((a,b)=>a+b.cost,0);
       const remain=budgets[v]-spent;
       halfTotal+=spent;
-      html+=`<div class="card p-2 mb-2 ${remain<0?"over-card":""}">
-      <b>${icons[v]} ${v} ($${budgets[v]})</b>
-      <button class="btn btn-sm btn-primary float-end" onclick="add('${h.key}','${v}')">${t.add}</button>`;
+      let items="";
       list.forEach((e,i)=>{
-        html+=`<div class="expense">${e.date} | ${e.name} $${e.cost.toFixed(2)} (៛${(e.cost*EXCHANGE_RATE).toLocaleString()})
+        items+=`<div class="expense">${e.date} | ${e.name} $${e.cost.toFixed(2)}
         <button class="btn btn-sm btn-light" onclick="edit('${h.key}','${v}',${i})">✏️</button></div>`;
       });
-      html+=`<div class="stat ${remain<0?"over":"ok"}">
-      ${t.spent}: $${spent.toFixed(2)} | ${remain<0?t.over:"Remaining"}: $${Math.abs(remain).toFixed(2)}</div>
+
+      let foodPlan="";
+      if(v==="Food"&&todayInfo.half===h.key){
+        foodPlan=`<div class="food-plan"><b>${t.needRemain}:</b> $${(todayInfo.daysLeft*DAILY_MAX).toFixed(2)}</div>`;
+      }
+
+      html+=`<div class="card p-2 mb-2 ${remain<0?"over-card":""}">
+      <b>${t.items[v]} ($${budgets[v]})</b>
+      <button class="btn btn-sm btn-primary float-end" onclick="add('${h.key}','${v}')">${t.add}</button>
+      ${items}
+      <div class="stat ${remain<0?"over":"ok"}">${t.spent}: $${spent.toFixed(2)} |
+      ${remain<0?t.over:t.remain}: $${Math.abs(remain).toFixed(2)}</div>
+      ${foodPlan}
       <div class="progress"><div class="progress-bar ${remain<0?"bg-danger":"bg-success"}"
       style="width:${Math.min(spent/budgets[v]*100,100)}%"></div></div></div>`;
     });
@@ -184,10 +168,6 @@ function render(){
 
   grandSpent.textContent=grand.toFixed(2);
   grandRemain.textContent=(SALARY-grand).toFixed(2);
-  totalCard.className=SALARY-grand<0?"card-body text-danger fw-bold text-center":"card-body text-success fw-bold text-center";
-
-  renderToday();
-  renderTopSpend();
 }
 
 /* ACTIONS */
@@ -200,7 +180,7 @@ function add(h,c){
   expDate.value=new Date().toISOString().split("T")[0];
   modalTitle.textContent=i18n[lang].edit;
   new bootstrap.Modal(expModal).show();
-  setTimeout(()=>expName.focus(),300);
+  setTimeout(()=>expName.focus(),200);
 }
 function edit(h,c,i){
   const l=load(key(h,c));
@@ -228,7 +208,6 @@ deleteBtn.onclick=()=>{
   bootstrap.Modal.getInstance(expModal).hide();
   render();
 };
-
 langBtn.onclick=()=>{lang=lang==="en"?"km":"en";localStorage.setItem("lang",lang);render();}
 monthSelect.onchange=render;
 resetMonth.onclick=()=>{halves.forEach(h=>[...h.fixed,...h.vars].forEach(c=>localStorage.removeItem(key(h.key,c))));render();}
